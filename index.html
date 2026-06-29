@@ -484,19 +484,10 @@ function numCardClick(val) {
   const slot = STATE.activeSlot
   const slotEl = document.getElementById(slot === 0 ? 'slot1' : 'slot2')
   
-  // Can't use same number twice (for same question)
-  const otherSlot = slot === 0 ? 1 : 0
-  if(STATE.slotValues[otherSlot] === val) return
-  
   // Fill slot
   STATE.slotValues[slot] = val
   slotEl.innerHTML = `<span>${val}</span>`
   slotEl.className = 'tree-slot filled'
-  
-  // Highlight used card
-  document.querySelectorAll('.num-card').forEach(c => {
-    if(parseInt(c.textContent) === val) c.classList.add('used')
-  })
   
   // Both filled? Check answer!
   if(STATE.slotValues[0] !== null && STATE.slotValues[1] !== null) {
@@ -504,6 +495,7 @@ function numCardClick(val) {
     setTimeout(() => checkAnswer(), 300)
   } else {
     // Switch to next slot
+    const otherSlot = slot === 0 ? 1 : 0
     STATE.activeSlot = otherSlot
     const nextSlotEl = document.getElementById(otherSlot === 0 ? 'slot1' : 'slot2')
     nextSlotEl.className = 'tree-slot active'
