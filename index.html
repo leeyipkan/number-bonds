@@ -344,7 +344,7 @@ function generateBonds(num) {
   for(let a=1; a<=num-1; a++) {
     const b = num - a
     // Include each unique pair once (a+b and b+a are same in bond tree)
-    if(a <= b) pairs.push({a, b})
+    if(a < b) pairs.push({a, b})
   }
   // Shuffle
   const shuffled = [...pairs].sort(()=>Math.random()-0.5)
