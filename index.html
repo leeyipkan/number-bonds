@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>小小數學家 — 數字分拆大冒險</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{width:100%;height:100%;background:#fff7e6;font-family:'Segoe UI',Arial,'Noto Sans HK',sans-serif;touch-action:manipulation}
+
+/* ===== SCREENS ===== */
+.screen{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;padding:8px;overflow-y:auto}
+.screen.active{display:flex}
+
+/* ===== TITLE SCREEN ===== */
+#screen-title{background:linear-gradient(180deg,#87ceeb,#e0f7fa 30%,#fff7e6 70%);justify-content:center;gap:4px}
+.title-rainbow{font-size:clamp(32px,8vw,72px);margin-bottom:2px;animation:rainbow 2s linear infinite}
+@keyframes rainbow{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+.title-sun{font-size:clamp(48px,12vw,96px);margin-bottom:4px}
+.title-h1{font-size:clamp(28px,7vw,52px);color:#e65100;font-weight:900;text-shadow:2px 2px 0 #ffcc80;text-align:center}
+.title-h2{font-size:clamp(13px,3vw,20px);color:#666;margin:2px 0 12px;text-align:center}
+.btn-start{font-size:clamp(24px,6vw,40px);padding:clamp(12px,3vw,20px) clamp(40px,10vw,80px);background:linear-gradient(180deg,#ff8a65,#e64a19);color:#fff;border:4px solid #bf360c;border-radius:20px;font-weight:900;cursor:pointer;box-shadow:0 6px 0 #bf360c;transition:.1s;letter-spacing:2px}
+.btn-start:active{transform:translateY(4px);box-shadow:0 2px 0 #bf360c}
+.title-animals{font-size:clamp(20px,5vw,40px);margin-top:12px;letter-spacing:6px}
+
+/* ===== LEVEL SELECT ===== */
+#screen-levels{background:linear-gradient(180deg,#e0f7fa,#fff7e6);padding:12px 16px}
+.ls-title{font-size:clamp(22px,5.5vw,40px);color:#e65100;font-weight:900;text-align:center;margin-bottom:4px}
+.ls-sub{font-size:clamp(12px,2.8vw,18px);color:#888;margin-bottom:8px}
+.ls-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:min(100%,500px);max-width:500px}
+.ls-card{display:flex;flex-direction:column;align-items:center;padding:clamp(10px,2.5vw,18px);border-radius:16px;cursor:pointer;transition:.2s;box-shadow:0 3px 8px rgba(0,0,0,.12);border:3px solid transparent}
+.ls-card:active{transform:scale(0.95)}
+.ls-card.unlocked{background:linear-gradient(135deg,#fff,#fff9c4);border-color:#ffcc02}
+.ls-card.locked{background:#e0e0e0;opacity:.5;pointer-events:none;border-color:#bbb}
+.ls-card.done{background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border-color:#66bb6a}
+.ls-card-num{font-size:clamp(36px,8vw,56px);font-weight:900;color:#e65100}
+.ls-card-icon{font-size:clamp(30px,7vw,48px);margin:2px 0}
+.ls-card-stars{font-size:clamp(14px,3vw,22px)}
+.ls-card-label{font-size:clamp(11px,2.5vw,16px);color:#888;margin-top:2px}
+.ls-all-done{font-size:clamp(18px,4vw,32px);color:#e65100;font-weight:900;text-align:center;margin-top:12px;animation:bounce 1s infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* ===== GAME SCREEN ===== */
+#screen-game{background:linear-gradient(180deg,#e3f2fd,#fff7e6 50%)}
+.game-header{display:flex;justify-content:space-between;align-items:center;width:min(95vw,500px);padding:4px 8px}
+.game-level-label{font-size:clamp(14px,3.5vw,22px);color:#e65100;font-weight:700}
+.game-stars{font-size:clamp(14px,3.5vw,22px)}
+
+/* Number Tree */
+.tree-wrap{display:flex;flex-direction:column;align-items:center;margin:clamp(4px,1vh,12px) 0;width:100%}
+.tree-top{width:clamp(80px,20vw,140px);height:clamp(60px,14vw,100px);background:linear-gradient(135deg,#ff8a65,#e64a19);border:4px solid #bf360c;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:clamp(42px,10vw,72px);font-weight:900;color:#fff;box-shadow:0 4px 12px rgba(230,74,25,.3),inset 0 -3px 0 rgba(0,0,0,.15);position:relative;z-index:2}
+.tree-top span{text-shadow:2px 2px 0 rgba(0,0,0,.2)}
+.tree-branches{display:flex;gap:clamp(30px,8vw,80px);margin-top:-6px;position:relative;z-index:1}
+.tree-branch-line{position:absolute;top:0;left:50%;width:clamp(30px,8vw,80px);height:20px;border-left:3px solid #8d6e63;border-right:3px solid #8d6e63;border-bottom:3px solid #8d6e63;border-radius:0 0 10px 10px;transform:translateX(-50%)}
+.tree-slot{width:clamp(72px,18vw,120px);height:clamp(56px,13vw,90px);background:linear-gradient(135deg,#fff9c4,#fff176);border:4px dashed #ff8f00;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:clamp(32px,8vw,56px);font-weight:900;color:#e65100;cursor:pointer;transition:.2s;position:relative;margin-top:20px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.tree-slot.active{animation:slotPulse .8s infinite;border-color:#e64a19;background:linear-gradient(135deg,#ffecb3,#ffe082)}
+.tree-slot.filled{border-style:solid;border-color:#66bb6a;background:linear-gradient(135deg,#e8f5e9,#a5d6a7);cursor:default;animation:none}
+.tree-slot.filled.wrong{animation:shake .4s;border-color:#f44336;background:linear-gradient(135deg,#ffebee,#ef9a9a)}
+@keyframes slotPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(230,74,25,.4)}50%{transform:scale(1.05);box-shadow:0 0 0 8px rgba(230,74,25,0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+.tree-plus{font-size:clamp(24px,6vw,44px);font-weight:900;color:#e65100;position:absolute;top:50%;left:50%;transform:translate(-50%,-30px)}
+.tree-eq{font-size:clamp(16px,4vw,28px);color:#888;margin-top:4px;font-weight:700;text-align:center}
+.tree-slot .slot-hint{font-size:clamp(20px,4vw,32px);color:#aaa}
+
+/* Number Cards */
+.cards-wrap{width:min(95vw,500px);margin:clamp(4px,1vh,12px) 0}
+.cards-label{font-size:clamp(13px,3vw,18px);color:#888;text-align:center;margin-bottom:6px}
+.cards-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(6px,1.5vw,10px)}
+.num-card{width:clamp(44px,10vw,70px);height:clamp(44px,10vw,70px);background:linear-gradient(135deg,#fff,#e3f2fd);border:3px solid #90caf9;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:clamp(24px,6vw,40px);font-weight:900;color:#1565c0;cursor:pointer;transition:.15s;box-shadow:0 3px 0 #90caf9}
+.num-card:active{transform:translateY(3px);box-shadow:0 0 0 #90caf9;background:linear-gradient(135deg,#bbdefb,#90caf9);color:#fff}
+.num-card.used{opacity:.3;pointer-events:none;transform:scale(.9)}
+
+/* Mascot */
+.mascot-area{position:relative;width:min(95vw,500px);text-align:center;margin:clamp(2px,0.5vh,6px) 0}
+.mascot-emoji{font-size:clamp(32px,7vw,52px);display:inline-block;animation:float 1.5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.mascot-speech{font-size:clamp(14px,3.2vw,20px);color:#e65100;font-weight:700;margin-top:2px;min-height:1.5em}
+
+/* ===== FEEDBACK ===== */
+.feedback-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:10}
+.feedback-overlay.show{display:flex;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.feedback-box{background:linear-gradient(135deg,rgba(0,0,0,.85),rgba(30,30,30,.9));padding:clamp(20px,5vw,40px) clamp(28px,7vw,56px);border-radius:24px;text-align:center;border:3px solid #ffcc02;box-shadow:0 0 40px rgba(255,204,2,.2)}
+.fb-icon{font-size:clamp(56px,14vw,100px);display:block}
+.fb-text{font-size:clamp(22px,5.5vw,38px);color:#fff;font-weight:900;margin-top:6px}
+.fb-sub{font-size:clamp(13px,3vw,20px);color:#ffcc02;margin-top:4px}
+
+/* ===== STICKER ===== */
+#screen-sticker{background:linear-gradient(135deg,#4a148c,#7b1fa2,#ab47bc);justify-content:center;gap:8px}
+.sticker-icon{font-size:clamp(80px,20vw,160px);animation:bounceIn .5s}
+@keyframes bounceIn{0%{transform:scale(0)}50%{transform:scale(1.2)}70%{transform:scale(0.9)}100%{transform:scale(1)}}
+.sticker-title{font-size:clamp(24px,6vw,40px);color:#ffcc02;font-weight:900;text-align:center}
+.sticker-sub{font-size:clamp(14px,3.5vw,22px);color:#e1bee7;text-align:center}
+.sticker-btn{font-size:clamp(18px,4.5vw,30px);padding:clamp(10px,2.5vw,16px) clamp(28px,7vw,56px);background:linear-gradient(180deg,#ffcc02,#ffa000);color:#4a148c;border:3px solid #e65100;border-radius:16px;cursor:pointer;font-weight:900;box-shadow:0 4px 0 #e65100;transition:.1s;margin-top:8px}
+.sticker-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #e65100}
+
+/* ===== ALL DONE ===== */
+#screen-complete{background:linear-gradient(135deg,#e65100,#ff8a65);justify-content:center;gap:6px}
+.complete-icon{font-size:clamp(72px,18vw,140px);animation:bounceIn .5s .2s both}
+.complete-title{font-size:clamp(28px,7vw,48px);color:#fff;font-weight:900;text-shadow:2px 2px 0 rgba(0,0,0,.2);text-align:center}
+.complete-sub{font-size:clamp(14px,3.5vw,22px);color:#ffcc80;text-align:center}
+.complete-animals{font-size:clamp(24px,6vw,40px);letter-spacing:6px;margin-top:4px}
+.complete-btn{font-size:clamp(18px,4.5vw,30px);padding:clamp(10px,2.5vw,16px) clamp(28px,7vw,56px);background:linear-gradient(180deg,#fff,#fff9c4);color:#e65100;border:3px solid #bf360c;border-radius:16px;cursor:pointer;font-weight:900;box-shadow:0 4px 0 #bf360c;transition:.1s;margin-top:8px}
+.complete-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #bf360c}
+/* Confetti */
+.confetti{position:absolute;pointer-events:none;font-size:clamp(12px,3vw,24px);animation:confettiFall linear forwards}
+@keyframes confettiFall{0%{opacity:1;transform:translateY(0) rotate(0deg)}100%{opacity:0;transform:translateY(100vh) rotate(720deg)}}
+
+/* ===== COMPACT ===== */
+@media(max-height:550px),(orientation:landscape){
+  #screen-title{gap:1px;padding:2px}
+  .title-sun{font-size:clamp(24px,5vh,40px);margin-bottom:0}
+  .title-h1{font-size:clamp(16px,3.5vh,26px)}
+  .title-h2{font-size:clamp(9px,2vh,14px);margin:0 0 4px}
+  .btn-start{font-size:clamp(14px,3vh,22px);padding:clamp(4px,1.2vh,10px) clamp(24px,5vw,48px);border-width:3px}
+  .title-animals{font-size:clamp(14px,3vh,22px);margin-top:4px}
+  .title-rainbow{font-size:clamp(18px,4vh,32px)}
+
+  #screen-levels{padding:4px 8px}
+  .ls-title{font-size:clamp(12px,2.5vh,20px);margin-bottom:0}
+  .ls-sub{font-size:clamp(9px,1.8vh,14px);margin-bottom:2px}
+  .ls-grid{gap:4px;width:min(80%,400px)}
+  .ls-card{padding:clamp(4px,1vh,10px)}
+  .ls-card-num{font-size:clamp(16px,3vh,28px)}
+  .ls-card-icon{font-size:clamp(16px,3vh,28px)}
+  .ls-card-stars{font-size:clamp(10px,2vh,16px)}
+  .ls-all-done{font-size:clamp(12px,2.5vh,20px);margin-top:4px}
+
+  #screen-game{padding:2px;gap:1px}
+  .game-header{padding:2px 4px;width:min(80%,400px)}
+  .game-level-label{font-size:clamp(9px,2vh,14px)}
+  .game-stars{font-size:clamp(9px,2vh,14px)}
+  .tree-wrap{margin:1px 0}
+  .tree-top{width:clamp(44px,10vh,70px);height:clamp(32px,7vh,50px);font-size:clamp(22px,5vh,36px);border-width:3px}
+  .tree-branches{gap:clamp(20px,5vw,48px)}
+  .tree-slot{width:clamp(40px,9vh,64px);height:clamp(32px,7vh,48px);font-size:clamp(18px,4vh,30px);border-width:3px;margin-top:10px}
+  .tree-plus{font-size:clamp(14px,3vh,24px);transform:translate(-50%,-18px)}
+  .tree-eq{font-size:clamp(10px,2vh,16px);margin-top:1px}
+  .tree-slot .slot-hint{font-size:clamp(14px,3vh,22px)}
+  .cards-wrap{margin:1px 0}
+  .cards-label{font-size:clamp(9px,1.8vh,14px);margin-bottom:2px}
+  .cards-grid{gap:clamp(3px,0.8vh,6px)}
+  .num-card{width:clamp(30px,6vh,44px);height:clamp(30px,6vh,44px);font-size:clamp(14px,3vh,24px);border-width:2px}
+  .mascot-area{margin:0}
+  .mascot-emoji{font-size:clamp(16px,3.5vh,28px)}
+  .mascot-speech{font-size:clamp(8px,1.8vh,14px)}
+
+  .feedback-box{padding:clamp(8px,2vh,20px) clamp(14px,3vh,30px);border-width:2px}
+  .fb-icon{font-size:clamp(28px,6vh,48px)}
+  .fb-text{font-size:clamp(14px,3vh,22px)}
+  .fb-sub{font-size:clamp(9px,1.8vh,14px)}
+
+  #screen-sticker{padding:4px;gap:2px}
+  .sticker-icon{font-size:clamp(36px,8vh,64px)}
+  .sticker-title{font-size:clamp(14px,3vh,24px)}
+  .sticker-sub{font-size:clamp(10px,2vh,16px)}
+  .sticker-btn{font-size:clamp(12px,2.5vh,20px);padding:clamp(4px,1vh,8px) clamp(16px,4vw,32px);margin-top:2px}
+
+  #screen-complete{padding:4px;gap:2px}
+  .complete-icon{font-size:clamp(32px,7vh,56px)}
+  .complete-title{font-size:clamp(16px,3.5vh,28px)}
+  .complete-sub{font-size:clamp(10px,2vh,16px)}
+  .complete-animals{font-size:clamp(14px,3vh,22px);margin-top:2px}
+  .complete-btn{font-size:clamp(12px,2.5vh,20px);padding:clamp(4px,1vh,8px) clamp(16px,4vw,32px);margin-top:2px}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== TITLE SCREEN ====== -->
+<div class="screen active" id="screen-title">
+  <div class="title-rainbow">🌈</div>
+  <div class="title-sun">☀️</div>
+  <div class="title-h1">小小數學家</div>
+  <div class="title-h2">數字分拆大冒險 🎯</div>
+  <button class="btn-start" onclick="titleStart()">▶ 開始遊戲！</button>
+  <div class="title-animals">🐣 🐰 🐱 🐶 🐼 🦁 🐸 🦄</div>
+</div>
+
+<!-- ====== LEVEL SELECT ====== -->
+<div class="screen" id="screen-levels">
+  <div class="ls-title">🎯 數字樂園</div>
+  <div class="ls-sub">揀一個數字嚟學分拆啦！</div>
+  <div class="ls-grid" id="lsGrid"></div>
+  <div class="ls-all-done" id="lsAllDone" style="display:none">🎉 全部完成！你係超級數學家！</div>
+</div>
+
+<!-- ====== GAME SCREEN ====== -->
+<div class="screen" id="screen-game">
+  <div class="game-header">
+    <div class="game-level-label" id="gameLevelLabel">🎯 數字 5</div>
+    <div class="game-stars" id="gameStars">⭐☆☆☆☆</div>
+  </div>
+
+  <!-- Number Tree -->
+  <div class="tree-wrap">
+    <div class="tree-top" id="treeTop"><span>5</span></div>
+    <div class="tree-branches">
+      <div style="position:relative">
+        <div class="tree-plus" style="position:absolute;left:50%;transform:translateX(-50%)">+</div>
+        <div class="tree-slot" id="slot1" onclick="slotClick(0)">
+          <span class="slot-hint">❓</span>
+        </div>
+      </div>
+      <div style="position:relative">
+        <div class="tree-slot" id="slot2" onclick="slotClick(1)">
+          <span class="slot-hint">❓</span>
+        </div>
+      </div>
+    </div>
+    <div class="tree-eq">= <span id="treeEqTarget">5</span></div>
+  </div>
+
+  <!-- Number Cards -->
+  <div class="cards-wrap">
+    <div class="cards-label">👆 㩒數字放落空格度</div>
+    <div class="cards-grid" id="cardsGrid"></div>
+  </div>
+
+  <!-- Mascot -->
+  <div class="mascot-area">
+    <div class="mascot-emoji" id="mascotEmoji">🐣</div>
+    <div class="mascot-speech" id="mascotSpeech">加油！你一定得嘅！💪</div>
+  </div>
+
+  <!-- Feedback -->
+  <div class="feedback-overlay" id="feedback">
+    <div class="feedback-box">
+      <span class="fb-icon" id="fbIcon">✅</span>
+      <div class="fb-text" id="fbText">好叻仔！</div>
+      <div class="fb-sub" id="fbSub">+ ⭐ 星星一粒</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== STICKER UNLOCK ====== -->
+<div class="screen" id="screen-sticker">
+  <div class="sticker-icon" id="stickerIcon">🐣</div>
+  <div class="sticker-title" id="stickerTitle">🎉 得到新貼紙！</div>
+  <div class="sticker-sub" id="stickerSub">你已經學會分拆數字 3 啦！</div>
+  <button class="sticker-btn" onclick="stickerContinue()">▶ 繼續玩！</button>
+</div>
+
+<!-- ====== ALL COMPLETE ====== -->
+<div class="screen" id="screen-complete">
+  <div class="complete-icon">🏆</div>
+  <div class="complete-title">🎉 超級數學家！</div>
+  <div class="complete-sub">你已經學晒所有數字分拆！</div>
+  <div class="complete-animals">🐣🐰🐱🐶🐼🦁🐸🦄</div>
+  <button class="complete-btn" onclick="completeRestart()">🔄 再玩一次！</button>
+</div>
+
+<script>
+// ===== CONFIG =====
+const LEVELS = [
+  { num: 3, animal: '🐣', animalName: '小雞', motto: '加油！你一定得嘅！💪' },
+  { num: 4, animal: '🐰', animalName: '兔仔', motto: '你好聰明呀！😊' },
+  { num: 5, animal: '🐱', animalName: '小貓', motto: '叻仔！繼續努力！🌟' },
+  { num: 6, animal: '🐶', animalName: '小狗', motto: '哇！你係天才！✨' },
+  { num: 7, animal: '🐼', animalName: '熊貓', motto: '好犀利呀！我勁欣賞你！🎉' },
+  { num: 8, animal: '🦁', animalName: '獅子', motto: '你越嚟越勁啦！🏆' },
+  { num: 9, animal: '🐸', animalName: '青蛙', motto: '嘩！快要完成啦！🌈' },
+  { num: 10, animal: '🦄', animalName: '獨角獸', motto: '你係最叻嘅小朋友！⭐' },
+]
+
+const ENCOURAGE_CORRECT = ['好叻仔！🎉','好聰明呀！🧠','你係天才！✨','做得好好！👏','加油！好勁！💪','完美！🏆','叻仔！繼續努力！🌟','哇！答對啦！🎊']
+const ENCOURAGE_WRONG = ['差少少，再試過！💪','好接近啦！🤏','唔緊要，加油！😊','再諗吓先！🤔','你可以嘅！試多次！🌈']
+
+// ===== STATE =====
+const STATE = {
+  screen: 'title',
+  // For each level index: { stars: N, sticker: false }
+  progress: {},
+  currentLevel: 0,
+  currentQuestions: [],    // [{a, b}, ...]
+  currentQuestionIdx: 0,
+  slotValues: [null, null],  // numbers in slot1, slot2
+  activeSlot: 0,            // 0 or 1
+  waitingForCheck: false,   // prevent re-entrancy
+  feedbackShowing: false,
+}
+
+// ===== AUDIO =====
+let audioCtx = null
+function initAudio() {
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+}
+
+function playTone(freq, duration=0.12, type='square', vol=0.12) {
+  try {
+    initAudio()
+    const o = audioCtx.createOscillator()
+    const g = audioCtx.createGain()
+    o.type = type
+    o.frequency.value = freq
+    g.gain.setValueAtTime(vol, audioCtx.currentTime)
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration)
+    o.connect(g)
+    g.connect(audioCtx.destination)
+    o.start()
+    o.stop(audioCtx.currentTime + duration)
+  } catch(e) {}
+}
+
+function sfxTap() { playTone(660, 0.06, 'sine', 0.08) }
+function sfxCorrect() {
+  playTone(523, 0.1, 'triangle', 0.12)
+  setTimeout(()=>playTone(659, 0.1, 'triangle', 0.12), 80)
+  setTimeout(()=>playTone(784, 0.18, 'triangle', 0.12), 160)
+}
+function sfxWrong() { playTone(200, 0.25, 'sawtooth', 0.08) }
+function sfxSticker() {
+  [523, 659, 784, 1047].forEach((f,i)=>setTimeout(()=>playTone(f, 0.2, 'triangle', 0.1), i*100))
+}
+function sfxParty() {
+  const notes = [523,587,659,698,784,880,988,1047,1175,1319]
+  notes.forEach((f,i)=>setTimeout(()=>playTone(f, 0.12, 'triangle', 0.08), i*70))
+}
+
+// ===== SAVE/LOAD =====
+function saveGame() {
+  try {
+    localStorage.setItem('numBonds', JSON.stringify(STATE.progress))
+  } catch(e) {}
+}
+function loadGame() {
+  try {
+    const d = JSON.parse(localStorage.getItem('numBonds'))
+    if(d) STATE.progress = d
+  } catch(e) {}
+}
+
+// ===== HELPERS =====
+function getProgress(idx) {
+  if(!STATE.progress[idx]) STATE.progress[idx] = { stars: 0, sticker: false }
+  return STATE.progress[idx]
+}
+
+// Generate number bond questions for a target number
+function generateBonds(num) {
+  const pairs = []
+  for(let a=1; a<=num-1; a++) {
+    const b = num - a
+    // Include each unique pair once (a+b and b+a are same in bond tree)
+    if(a <= b) pairs.push({a, b})
+  }
+  // Shuffle
+  const shuffled = [...pairs].sort(()=>Math.random()-0.5)
+  return shuffled
+}
+
+// ===== SCREEN MANAGEMENT =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  const el = document.getElementById('screen-'+id)
+  if(el) el.classList.add('active')
+  STATE.screen = id
+}
+
+// ===== TITLE =====
+function titleStart() {
+  sfxTap()
+  initAudio()
+  renderLevelSelect()
+  showScreen('levels')
+}
+
+// ===== LEVEL SELECT =====
+function renderLevelSelect() {
+  const grid = document.getElementById('lsGrid')
+  grid.innerHTML = ''
+  let allDone = true
+  LEVELS.forEach((lv, i) => {
+    const p = getProgress(i)
+    const isUnlocked = i === 0 || getProgress(i-1).sticker
+    const isDone = p.sticker
+    if(!isDone) allDone = false
+    
+    const card = document.createElement('div')
+    card.className = 'ls-card'
+    if(isDone) {
+      card.classList.add('done')
+    } else if(isUnlocked) {
+      card.classList.add('unlocked')
+    } else {
+      card.classList.add('locked')
+    }
+    
+    const starStr = '⭐'.repeat(Math.min(p.stars || 0, 5)) + '☆'.repeat(Math.max(0, 5 - Math.min(p.stars || 0, 5)))
+    
+    card.innerHTML = `
+      <div class="ls-card-num">${lv.num}</div>
+      <div class="ls-card-icon">${isDone ? lv.animal : (isUnlocked ? '🎯' : '🔒')}</div>
+      <div class="ls-card-stars">${isDone ? '✅ ' + lv.animal : starStr}</div>
+      <div class="ls-card-label">${isDone ? '完成！' : (isUnlocked ? '開始 ▶' : '未解鎖')}</div>
+    `
+    
+    card.onclick = function() {
+      if(isUnlocked && !isDone) startLevel(i)
+      if(isDone) {
+        sfxTap()
+      }
+    }
+    
+    grid.appendChild(card)
+  })
+  
+  document.getElementById('lsAllDone').style.display = allDone ? 'block' : 'none'
+}
+
+// ===== GAME =====
+function startLevel(idx) {
+  STATE.currentLevel = idx
+  STATE.currentQuestionIdx = 0
+  STATE.currentQuestions = generateBonds(LEVELS[idx].num)
+  STATE.slotValues = [null, null]
+  STATE.activeSlot = 0
+  STATE.waitingForCheck = false
+  STATE.feedbackShowing = false
+  showQuestion()
+}
+
+function showQuestion() {
+  const lv = LEVELS[STATE.currentLevel]
+  const q = STATE.currentQuestions[STATE.currentQuestionIdx]
+  const p = getProgress(STATE.currentLevel)
+  
+  document.getElementById('gameLevelLabel').textContent = `🎯 ${lv.animal} 數字 ${lv.num}`
+  document.getElementById('gameStars').textContent = '⭐'.repeat(Math.min(p.stars||0, 5)) + '☆'.repeat(Math.max(0, 5 - Math.min(p.stars||0, 5)))
+  
+  // Tree
+  document.querySelector('#treeTop span').textContent = lv.num
+  document.getElementById('treeEqTarget').textContent = lv.num
+  
+  // Reset slots
+  STATE.slotValues = [null, null]
+  STATE.activeSlot = 0
+  const slot1 = document.getElementById('slot1')
+  const slot2 = document.getElementById('slot2')
+  slot1.innerHTML = '<span class="slot-hint">❓</span>'
+  slot2.innerHTML = '<span class="slot-hint">❓</span>'
+  slot1.className = 'tree-slot active'
+  slot2.className = 'tree-slot'
+  
+  // Generate number cards: show 1 to num-1
+  const num = lv.num
+  const grid = document.getElementById('cardsGrid')
+  grid.innerHTML = ''
+  
+  // Show all numbers 1 to num-1 that could be used
+  // But mark q.a and q.b with a slight highlight? No, keep it fair.
+  // Show all numbers 1 to num-1
+  for(let i=1; i<=num-1; i++) {
+    const card = document.createElement('div')
+    card.className = 'num-card'
+    card.textContent = i
+    card.onclick = function() { numCardClick(i) }
+    grid.appendChild(card)
+  }
+  
+  // Update mascot
+  document.getElementById('mascotEmoji').textContent = lv.animal
+  const correctCount = p.stars || 0
+  const total = STATE.currentQuestions.length
+  if(correctCount >= total) {
+    document.getElementById('mascotSpeech').textContent = '嘩！你全部做啱啦！🎉'
+  } else {
+    document.getElementById('mascotSpeech').textContent = lv.motto
+  }
+  
+  // Reset feedback
+  document.getElementById('feedback').classList.remove('show')
+  STATE.feedbackShowing = false
+  
+  showScreen('game')
+}
+
+function numCardClick(val) {
+  if(STATE.feedbackShowing) return
+  sfxTap()
+  
+  const slot = STATE.activeSlot
+  const slotEl = document.getElementById(slot === 0 ? 'slot1' : 'slot2')
+  
+  // Can't use same number twice (for same question)
+  const otherSlot = slot === 0 ? 1 : 0
+  if(STATE.slotValues[otherSlot] === val) return
+  
+  // Fill slot
+  STATE.slotValues[slot] = val
+  slotEl.innerHTML = `<span>${val}</span>`
+  slotEl.className = 'tree-slot filled'
+  
+  // Highlight used card
+  document.querySelectorAll('.num-card').forEach(c => {
+    if(parseInt(c.textContent) === val) c.classList.add('used')
+  })
+  
+  // Both filled? Check answer!
+  if(STATE.slotValues[0] !== null && STATE.slotValues[1] !== null) {
+    STATE.waitingForCheck = true
+    setTimeout(() => checkAnswer(), 300)
+  } else {
+    // Switch to next slot
+    STATE.activeSlot = otherSlot
+    const nextSlotEl = document.getElementById(otherSlot === 0 ? 'slot1' : 'slot2')
+    nextSlotEl.className = 'tree-slot active'
+  }
+}
+
+function checkAnswer() {
+  if(STATE.feedbackShowing) return
+  const lv = LEVELS[STATE.currentLevel]
+  const q = STATE.currentQuestions[STATE.currentQuestionIdx]
+  const a = STATE.slotValues[0]
+  const b = STATE.slotValues[1]
+  
+  const isCorrect = (a + b === lv.num)
+  
+  if(isCorrect) {
+    sfxCorrect()
+    
+    // Award star
+    const p = getProgress(STATE.currentLevel)
+    p.stars = (p.stars || 0) + 1
+    saveGame()
+    
+    // Update stars in header
+    document.getElementById('gameStars').textContent = '⭐'.repeat(Math.min(p.stars, 5)) + '☆'.repeat(Math.max(0, 5 - Math.min(p.stars, 5)))
+    
+    // Random encouragement
+    const msg = ENCOURAGE_CORRECT[Math.floor(Math.random() * ENCOURAGE_CORRECT.length)]
+    
+    // Show feedback
+    document.getElementById('fbIcon').textContent = '✅'
+    document.getElementById('fbText').textContent = msg
+    document.getElementById('fbSub').textContent = '+ ⭐ 星星一粒！'
+    
+    const fb = document.getElementById('feedback')
+    fb.classList.add('show')
+    STATE.feedbackShowing = true
+    
+    // Correct animation on slots
+    document.getElementById('slot1').classList.add('correct')
+    document.getElementById('slot2').classList.add('correct')
+    
+    setTimeout(() => {
+      fb.classList.remove('show')
+      STATE.feedbackShowing = false
+      STATE.waitingForCheck = false
+      
+      // Next question or level complete
+      STATE.currentQuestionIdx++
+      if(STATE.currentQuestionIdx >= STATE.currentQuestions.length) {
+        // Level complete!
+        onLevelComplete()
+      } else {
+        showQuestion()
+      }
+    }, 1200)
+    
+  } else {
+    sfxWrong()
+    
+    // Random encouragement
+    const msg = ENCOURAGE_WRONG[Math.floor(Math.random() * ENCOURAGE_WRONG.length)]
+    
+    document.getElementById('fbIcon').textContent = '🤔'
+    document.getElementById('fbText').textContent = msg
+    document.getElementById('fbSub').textContent = '再試過！💪'
+    
+    const fb = document.getElementById('feedback')
+    fb.classList.add('show')
+    STATE.feedbackShowing = true
+    
+    // Shake animation on slots
+    const slot1 = document.getElementById('slot1')
+    const slot2 = document.getElementById('slot2')
+    slot1.classList.add('wrong')
+    slot2.classList.add('wrong')
+    
+    setTimeout(() => {
+      fb.classList.remove('show')
+      STATE.feedbackShowing = false
+      STATE.waitingForCheck = false
+      
+      // Reset slots for retry
+      STATE.slotValues = [null, null]
+      STATE.activeSlot = 0
+      slot1.className = 'tree-slot active'
+      slot2.className = 'tree-slot'
+      slot1.innerHTML = '<span class="slot-hint">❓</span>'
+      slot2.innerHTML = '<span class="slot-hint">❓</span>'
+      
+      // Reset all cards
+      document.querySelectorAll('.num-card').forEach(c => c.classList.remove('used'))
+    }, 1000)
+  }
+}
+
+function onLevelComplete() {
+  const lv = LEVELS[STATE.currentLevel]
+  const p = getProgress(STATE.currentLevel)
+  p.sticker = true
+  saveGame()
+  
+  sfxSticker()
+  
+  // Show sticker screen
+  document.getElementById('stickerIcon').textContent = lv.animal
+  document.getElementById('stickerTitle').textContent = `🎉 得到 ${lv.animalName} 貼紙！`
+  document.getElementById('stickerSub').textContent = `你已經學會分拆數字 ${lv.num} 啦！好叻仔！⭐`
+  
+  // Check if all done
+  const allDone = LEVELS.every((_, i) => getProgress(i).sticker)
+  
+  showScreen('sticker')
+}
+
+function stickerContinue() {
+  sfxTap()
+  const allDone = LEVELS.every((_, i) => getProgress(i).sticker)
+  if(allDone) {
+    // Grand celebration!
+    sfxParty()
+    showScreen('complete')
+    // Confetti
+    launchConfetti()
+  } else {
+    renderLevelSelect()
+    showScreen('levels')
+  }
+}
+
+function completeRestart() {
+  sfxTap()
+  STATE.progress = {}
+  saveGame()
+  renderLevelSelect()
+  showScreen('levels')
+}
+
+// ===== CONFETTI =====
+function launchConfetti() {
+  const emojis = ['🎉','🎊','⭐','🌟','💫','✨','🌈','🎯','🏆','💎']
+  for(let i=0; i<40; i++) {
+    setTimeout(() => {
+      const c = document.createElement('div')
+      c.className = 'confetti'
+      c.textContent = emojis[Math.floor(Math.random()*emojis.length)]
+      c.style.left = Math.random()*100 + '%'
+      c.style.top = '-20px'
+      c.style.animationDuration = (1.5 + Math.random()) + 's'
+      c.style.fontSize = (14 + Math.random()*20) + 'px'
+      document.getElementById('screen-complete').appendChild(c)
+      setTimeout(() => c.remove(), 3000)
+    }, i * 80)
+  }
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  loadGame()
+  renderLevelSelect()
+  console.log('🌈 小小數學家 loaded!')
+  console.log('💡 Tip: Press 1-9 number keys to pick cards (desktop)')
+})
+
+// ===== KEYBOARD SUPPORT =====
+document.addEventListener('keydown', (e) => {
+  if(STATE.screen === 'game') {
+    const num = parseInt(e.key)
+    if(num >= 1 && num <= 9) {
+      const cards = document.querySelectorAll('.num-card')
+      cards.forEach(c => {
+        if(parseInt(c.textContent) === num && !c.classList.contains('used')) {
+          c.click()
+        }
+      })
+    }
+  }
+})
+</script>
+</body>
+</html>
